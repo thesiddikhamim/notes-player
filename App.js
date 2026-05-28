@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import LibraryScreen from './src/screens/LibraryScreen';
 import PlayerScreen from './src/screens/PlayerScreen';
@@ -57,31 +59,33 @@ function MainTabs() {
 
 export default function App() {
   return (
-    <>
-      <StatusBar style="light" />
-      <NavigationContainer theme={CustomDarkTheme}>
-        <Stack.Navigator 
-          initialRouteName="Main"
-          screenOptions={{
-            headerStyle: { backgroundColor: '#0a0a0a' },
-            headerTintColor: '#ffffff',
-            headerTitleStyle: { fontWeight: 'bold' },
-            contentStyle: { backgroundColor: '#0d0d0d' },
-            headerShadowVisible: false,
-          }}
-        >
-          <Stack.Screen 
-            name="Main" 
-            component={MainTabs} 
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen 
-            name="Player" 
-            component={PlayerScreen} 
-            options={{ headerShown: false }} 
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <NavigationContainer theme={CustomDarkTheme}>
+          <Stack.Navigator 
+            initialRouteName="Main"
+            screenOptions={{
+              headerStyle: { backgroundColor: '#0a0a0a' },
+              headerTintColor: '#ffffff',
+              headerTitleStyle: { fontWeight: 'bold' },
+              contentStyle: { backgroundColor: '#0d0d0d' },
+              headerShadowVisible: false,
+            }}
+          >
+            <Stack.Screen 
+              name="Main" 
+              component={MainTabs} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Player" 
+              component={PlayerScreen} 
+              options={{ headerShown: false }} 
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
