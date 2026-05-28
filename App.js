@@ -1,25 +1,59 @@
 import React from 'react';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
 import LibraryScreen from './src/screens/LibraryScreen';
 import PlayerScreen from './src/screens/PlayerScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import WatchedScreen from './src/screens/WatchedScreen';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const CustomDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
     background: '#0d0d0d',
-    card: '#1a1a1a',
+    card: '#0a0a0a',
     text: '#ffffff',
     border: '#2a2a2a',
-    primary: '#4CAF50',
+    primary: '#fff', // White active tab
   },
 };
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerStyle: { backgroundColor: '#0a0a0a' },
+        headerTintColor: '#ffffff',
+        headerTitleStyle: { fontWeight: 'bold' },
+        tabBarStyle: { backgroundColor: '#0a0a0a', borderTopColor: '#222' },
+        tabBarActiveTintColor: '#ffffff',
+        tabBarInactiveTintColor: '#555555',
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === 'Watchlist') {
+            iconName = focused ? 'bookmark' : 'bookmark-outline';
+          } else if (route.name === 'Watched') {
+            iconName = focused ? 'checkmark-circle' : 'checkmark-circle-outline';
+          } else if (route.name === 'Settings') {
+            iconName = focused ? 'settings' : 'settings-outline';
+          }
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Watchlist" component={LibraryScreen} />
+      <Tab.Screen name="Watched" component={WatchedScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
+    </Tab.Navigator>
+  );
+}
 
 export default function App() {
   return (
@@ -27,9 +61,9 @@ export default function App() {
       <StatusBar style="light" />
       <NavigationContainer theme={CustomDarkTheme}>
         <Stack.Navigator 
-          initialRouteName="Library"
+          initialRouteName="Main"
           screenOptions={{
-            headerStyle: { backgroundColor: '#1a1a1a' },
+            headerStyle: { backgroundColor: '#0a0a0a' },
             headerTintColor: '#ffffff',
             headerTitleStyle: { fontWeight: 'bold' },
             contentStyle: { backgroundColor: '#0d0d0d' },
@@ -37,19 +71,14 @@ export default function App() {
           }}
         >
           <Stack.Screen 
-            name="Library" 
-            component={LibraryScreen} 
-            options={{ title: 'VideoNotePlayer' }}
+            name="Main" 
+            component={MainTabs} 
+            options={{ headerShown: false }}
           />
           <Stack.Screen 
             name="Player" 
             component={PlayerScreen} 
             options={{ headerShown: false }} 
-          />
-          <Stack.Screen 
-            name="Settings" 
-            component={SettingsScreen} 
-            options={{ title: 'Settings' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

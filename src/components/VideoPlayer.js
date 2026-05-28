@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
 
-export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef }) {
+export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, onEndReached }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioMode, setAudioMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -59,6 +59,9 @@ export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef }
       }
       if (onTimeUpdate) {
         onTimeUpdate(newStatus.positionMillis / 1000); // Send time in seconds
+      }
+      if (newStatus.didJustFinish) {
+        if (onEndReached) onEndReached();
       }
     }
   };

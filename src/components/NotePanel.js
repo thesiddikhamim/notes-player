@@ -6,6 +6,7 @@ import Markdown from 'react-native-markdown-display';
 export default function NotePanel({ videoId, currentTime }) {
   const [note, setNote] = useState('');
   const [isPreview, setIsPreview] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('Saved ✓');
 
   useEffect(() => {
     loadNote();
@@ -18,11 +19,13 @@ export default function NotePanel({ videoId, currentTime }) {
 
   const handleNoteChange = (text) => {
     setNote(text);
+    setSaveStatus('Saving...');
     saveNote(text);
   };
 
   const saveNote = async (text) => {
     await AsyncStorage.setItem(`notes_${videoId}`, text);
+    setTimeout(() => setSaveStatus('Saved ✓'), 600);
   };
 
   const insertTimestamp = () => {
@@ -42,12 +45,26 @@ export default function NotePanel({ videoId, currentTime }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.toolbar}>
-        <TouchableOpacity style={styles.timestampBtn} onPress={insertTimestamp}>
-          <Text style={styles.timestampBtnText}>+ Timestamp</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.modeBtn} onPress={() => setIsPreview(!isPreview)}>
-          <Text style={styles.modeBtnText}>{isPreview ? 'Edit' : 'Preview'}</Text>
-        </TouchableOpacity>
+        <View style={styles.leftToolbar}>
+          <TouchableOpacity 
+            style={[styles.timestampBtn, !isPreview && styles.redModeBtn]} 
+            onPress={() => setIsPreview(!isPreview)}
+          >
+            <Text style={styles.timestampBtnText}>{isPreview ? 'Edit' : 'Edit'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.modeBtn, isPreview && styles.redModeBtn]} 
+            onPress={() => setIsPreview(true)}
+          >
+            <Text style={styles.modeBtnText}>Preview</Text>
+          </TouchableOpacity>
+          {!isPreview && (
+            <TouchableOpacity style={styles.addTimeBtn} onPress={insertTimestamp}>
+              <Text style={styles.addTimeBtnText}>+ Time</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={styles.saveStatus}>{saveStatus}</Text>
       </View>
 
       {isPreview ? (
@@ -72,39 +89,66 @@ export default function NotePanel({ videoId, currentTime }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#0a0a0a',
   },
   toolbar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 10,
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
+    borderBottomColor: '#222',
+  },
+  leftToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   timestampBtn: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
+    backgroundColor: '#333',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  redModeBtn: {
+    backgroundColor: '#f44336', // the red edit button from screenshot
   },
   timestampBtnText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 13,
   },
   modeBtn: {
-    backgroundColor: '#333',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   modeBtnText: {
-    color: '#fff',
+    color: '#888',
+    fontSize: 13,
+  },
+  addTimeBtn: {
+    marginLeft: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#333',
+    borderRadius: 4,
+  },
+  addTimeBtnText: {
+    color: '#aaa',
+    fontSize: 12,
+  },
+  saveStatus: {
+    color: '#4CAF50',
+    fontSize: 12,
   },
   editor: {
     flex: 1,
     padding: 15,
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 24,
+    fontFamily: 'monospace',
   },
   previewContainer: {
     flex: 1,
