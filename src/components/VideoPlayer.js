@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#111111',
   },
   audioModeText: {
     color: '#fff',

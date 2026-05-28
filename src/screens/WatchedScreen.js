@@ -111,7 +111,7 @@ export default function WatchedScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#000000',
   },
   emptyContainer: {
     flex: 1,

@@ -48,11 +48,11 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#000000',
     padding: 20,
   },
   section: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#111111',
     padding: 20,
     borderRadius: 8,
     marginBottom: 20,

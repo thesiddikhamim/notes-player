@@ -18,15 +18,6 @@ export default function LibraryScreen({ navigation }) {
       loadFolder();
     });
 
-    // Add a settings button to header
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-          <Ionicons name="settings-outline" size={24} color="#fff" style={{ marginRight: 15 }} />
-        </TouchableOpacity>
-      )
-    });
-
     return unsubscribe;
   }, [navigation]);
 
@@ -190,13 +181,13 @@ export default function LibraryScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#000000',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#000000',
   },
   emptyText: {
     color: '#555',
@@ -215,7 +206,7 @@ const styles = StyleSheet.create({
   },
   videoItem: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#111111',
     marginBottom: 10,
     borderRadius: 8,
     padding: 10,

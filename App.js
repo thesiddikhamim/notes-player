@@ -19,8 +19,8 @@ const CustomDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#0d0d0d',
-    card: '#0a0a0a',
+    background: '#000000',
+    card: '#000000',
     text: '#ffffff',
     border: '#2a2a2a',
     primary: '#fff', // White active tab
@@ -31,10 +31,11 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: '#0a0a0a' },
+        headerShown: false,
+        headerStyle: { backgroundColor: '#000000' },
         headerTintColor: '#ffffff',
         headerTitleStyle: { fontWeight: 'bold' },
-        tabBarStyle: { backgroundColor: '#0a0a0a', borderTopColor: '#222' },
+        tabBarStyle: { backgroundColor: '#000000', borderTopColor: '#222' },
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: '#555555',
         tabBarIcon: ({ focused, color, size }) => {
@@ -66,10 +67,10 @@ export default function App() {
           <Stack.Navigator 
             initialRouteName="Main"
             screenOptions={{
-              headerStyle: { backgroundColor: '#0a0a0a' },
+              headerStyle: { backgroundColor: '#000000' },
               headerTintColor: '#ffffff',
               headerTitleStyle: { fontWeight: 'bold' },
-              contentStyle: { backgroundColor: '#0d0d0d' },
+              contentStyle: { backgroundColor: '#000000' },
               headerShadowVisible: false,
             }}
           >
