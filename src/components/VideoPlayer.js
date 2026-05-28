@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, BackHandler, useWindowDimensions } from 'react-native';
-import { Video, Audio } from 'expo-av';
+import { Video, Audio, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
@@ -28,7 +28,7 @@ export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, 
       shouldDuckAndroid: false,
       playsInSilentModeIOS: true,
       allowsRecordingIOS: false,
-    });
+    }).catch((e) => console.log('Audio mode error', e));
 
     const onBackPress = () => {
       if (isFullscreen) {
@@ -37,8 +37,8 @@ export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, 
       }
       return false;
     };
-    BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
   }, [isFullscreen]);
 
   const toggleFullscreen = async () => {
@@ -88,7 +88,7 @@ export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, 
           source={{ uri: source }}
           style={styles.video}
           shouldPlay={isPlaying}
-          resizeMode={Video.RESIZE_MODE_CONTAIN}
+          resizeMode={ResizeMode.CONTAIN}
           onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
         />
       )}

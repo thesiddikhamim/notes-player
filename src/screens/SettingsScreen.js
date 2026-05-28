@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
-import Constants from 'expo-constants'; // Need to be installed or use package.json, let's use hardcoded for now or try expo-constants
+import * as FileSystem from 'expo-file-system/legacy';
 
 export default function SettingsScreen({ navigation }) {
   const [folderUri, setFolderUri] = useState('Not Set');

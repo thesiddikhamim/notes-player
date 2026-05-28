@@ -36,6 +36,9 @@
         "projectId": "55e015c6-7393-407a-8b9a-ca6fc3d48745"
       }
     },
-    "owner": "hamimhasan0001"
+    "owner": "hamimhasan0001",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
