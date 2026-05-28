@@ -34,40 +34,58 @@ export default function LibraryScreen({ navigation }) {
     const savedFolder = await AsyncStorage.getItem('video_folder');
     if (savedFolder) {
       setFolderUri(savedFolder);
-      loadVideos(savedFolder);
     }
+    loadVideos(savedFolder);
   };
 
   const loadVideos = async (folder) => {
     try {
-      // Assuming folder is an album ID or actual path, using FileSystem to read
-      let videoFiles = [];
-      try {
-        const files = await FileSystem.readDirectoryAsync(folder);
-        videoFiles = files.filter(f => f.match(/\.(mp4|mov|mkv|webm)$/i));
-      } catch (e) {
-        // Fallback: If folder from MediaLibrary
+      let videoUris = [];
+      
+      if (folder) {
+        try {
+          if (folder.startsWith('content://')) {
+            const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(folder);
+            videoUris = files.filter(f => {
+              const dec = decodeURIComponent(f).toLowerCase();
+              return dec.endsWith('.mp4') || dec.endsWith('.mov') || dec.endsWith('.mkv') || dec.endsWith('.webm');
+            });
+          } else {
+            const files = await FileSystem.readDirectoryAsync(folder);
+            const filtered = files.filter(f => f.match(/\.(mp4|mov|mkv|webm)$/i));
+            videoUris = filtered.map(f => folder + (folder.endsWith('/') ? '' : '/') + f);
+          }
+        } catch (e) {
+          console.log('Error reading folder', e);
+        }
       }
       
-      let videoData = await Promise.all(videoFiles.map(async (filename) => {
-        const uri = folder + (folder.endsWith('/') ? '' : '/') + filename;
+      const savedAdded = await AsyncStorage.getItem('added_videos');
+      let addedUris = savedAdded ? JSON.parse(savedAdded) : [];
+      
+      const allUrisSet = new Set([...videoUris, ...addedUris]);
+      const allUris = Array.from(allUrisSet);
+
+      let videoData = await Promise.all(allUris.map(async (uri) => {
         let thumb = null;
         try {
           const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(uri, { time: 1000 });
           thumb = thumbUri;
         } catch (e) { }
 
+        const decodedUri = decodeURIComponent(uri);
+        const filename = decodedUri.split('/').pop().split(':').pop();
+
         return {
-          id: filename,
+          id: uri,
           filename: filename.replace(/\.[^/.]+$/, ''),
           originalName: filename,
           uri,
           thumb,
-          duration: "Unknown" // We would get this from metadata
+          duration: "Unknown"
         };
       }));
 
-      // Sort by saved order
       const savedOrder = await AsyncStorage.getItem('video_order');
       if (savedOrder) {
         const orderArr = JSON.parse(savedOrder);
@@ -87,13 +105,34 @@ export default function LibraryScreen({ navigation }) {
   };
 
   const selectFolder = async () => {
-    // This is a naive implementation since real folder picking needs SAF (Storage Access Framework) in RN,
-    // which expo-document-picker partially supports or one can use expo-file-system SAF.
     const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
     if (permissions.granted) {
       await AsyncStorage.setItem('video_folder', permissions.directoryUri);
       setFolderUri(permissions.directoryUri);
       loadVideos(permissions.directoryUri);
+    }
+  };
+
+  const addIndividualVideo = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'video/*',
+        multiple: true,
+        copyToCacheDirectory: false,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newUris = result.assets.map(a => a.uri);
+        const savedAdded = await AsyncStorage.getItem('added_videos');
+        let addedUris = savedAdded ? JSON.parse(savedAdded) : [];
+        
+        const combined = Array.from(new Set([...addedUris, ...newUris]));
+        await AsyncStorage.setItem('added_videos', JSON.stringify(combined));
+        
+        loadVideos(folderUri);
+      }
+    } catch (e) {
+      console.log('Error adding individual video', e);
     }
   };
 
@@ -123,26 +162,27 @@ export default function LibraryScreen({ navigation }) {
     );
   };
 
-  if (!folderUri) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No video folder selected.</Text>
-        <TouchableOpacity style={styles.button} onPress={selectFolder}>
-          <Text style={styles.buttonText}>Set Video Folder</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <GestureHandlerRootView style={styles.container}>
-      <DraggableFlatList
-        data={videos}
-        onDragEnd={onDragEnd}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 15 }}
-      />
+      {videos.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No videos found.</Text>
+          <TouchableOpacity style={styles.button} onPress={selectFolder}>
+            <Text style={styles.buttonText}>Set Video Folder</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <DraggableFlatList
+          data={videos}
+          onDragEnd={onDragEnd}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ padding: 15, paddingBottom: 80 }}
+        />
+      )}
+      <TouchableOpacity style={styles.fab} onPress={addIndividualVideo}>
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
     </GestureHandlerRootView>
   );
 }
@@ -203,5 +243,21 @@ const styles = StyleSheet.create({
   },
   dragHandle: {
     padding: 10,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#4CAF50',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   }
 });
