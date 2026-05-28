@@ -1,14 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { parseSRT } from '../utils/srtParser';
 
-export default function TranscriptionPanel({ currentTime, onSeek }) {
+export default function TranscriptionPanel({ currentTime, onSeek, videoId }) {
   const [cues, setCues] = useState([]);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const listRef = useRef(null);
   const scrollTimeout = useRef(null);
+
+  useEffect(() => {
+    loadSavedCaptions();
+  }, [videoId]);
+
+  const loadSavedCaptions = async () => {
+    setIsLoading(true);
+    try {
+      const savedUri = await AsyncStorage.getItem(`transcript_${videoId}`);
+      if (savedUri) {
+        await parseAndSetCues(savedUri);
+      }
+    } catch (e) {
+      console.log('Error loading saved captions', e);
+    }
+    setIsLoading(false);
+  };
+
+  const parseAndSetCues = async (fileUri) => {
+    const fileData = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
+    const parsed = parseSRT(fileData);
+    setCues(parsed);
+  };
 
   useEffect(() => {
     if (cues.length > 0 && autoScroll && listRef.current) {
@@ -33,9 +58,8 @@ export default function TranscriptionPanel({ currentTime, onSeek }) {
       if (res.canceled) return;
       const fileUri = res.assets[0].uri;
       
-      const fileData = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
-      const parsed = parseSRT(fileData);
-      setCues(parsed);
+      await parseAndSetCues(fileUri);
+      await AsyncStorage.setItem(`transcript_${videoId}`, fileUri);
 
     } catch (e) {
       console.log('Failed to load captions', e);
@@ -78,6 +102,14 @@ export default function TranscriptionPanel({ currentTime, onSeek }) {
       </TouchableOpacity>
     );
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
 
   if (cues.length === 0) {
     return (

@@ -45,7 +45,7 @@ export default function PlayerScreen({ route, navigation }) {
           {activeTab === 'notes' ? (
             <NotePanel videoId={video.id} currentTime={currentTime} />
           ) : (
-            <TranscriptionPanel currentTime={currentTime} onSeek={handleSeek} />
+            <TranscriptionPanel currentTime={currentTime} onSeek={handleSeek} videoId={video.id} />
           )}
         </View>
       </View>
