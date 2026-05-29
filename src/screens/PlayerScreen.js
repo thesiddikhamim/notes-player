@@ -53,7 +53,6 @@ export default function PlayerScreen({ route, navigation }) {
       <View style={styles.contentPanel}>
         <View style={styles.headerInfo}>
           <Text style={styles.title} numberOfLines={2}>{video.filename}</Text>
-          <Text style={styles.subtitle}>Library • VideoNotePlayer</Text>
         </View>
 
         <View style={styles.actionRow}>

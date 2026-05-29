@@ -4,6 +4,7 @@ import { Video, Audio, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
+import Slider from '@react-native-community/slider';
 
 export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, onEndReached }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -108,6 +109,25 @@ export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, 
     }
   };
 
+  const formatTime = (millis) => {
+    if (!millis) return '0:00';
+    const totalSeconds = Math.floor(millis / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = async (value) => {
+    if (videoRef.current) {
+      await videoRef.current.setPositionAsync(value);
+    }
+  };
+
   return (
     <View style={[styles.container, isFullscreen && styles.fullscreenContainer]}>
       <Video
@@ -154,10 +174,19 @@ export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, 
         </View>
 
         <View style={styles.bottomRow}>
-             {/* Progress bar mock */}
-             <Text style={styles.timeText}>
-               {status.positionMillis ? (status.positionMillis / 1000).toFixed(0) : '0'}s / {status.durationMillis ? (status.durationMillis / 1000).toFixed(0) : '0'}s
-             </Text>
+          <Text style={styles.timeText}>
+            {formatTime(status.positionMillis)} / {formatTime(status.durationMillis)}
+          </Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={0}
+            maximumValue={status.durationMillis || 100}
+            value={status.positionMillis || 0}
+            onSlidingComplete={handleSeek}
+            minimumTrackTintColor="#E63946"
+            maximumTrackTintColor="#555"
+            thumbTintColor="#E63946"
+          />
         </View>
       </View>
     </View>
@@ -231,8 +260,18 @@ const styles = StyleSheet.create({
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingBottom: 4,
   },
   timeText: {
     color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    minWidth: 80,
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+    marginLeft: 10,
   }
 });
