@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   redModeBtn: {
-    backgroundColor: '#f44336', // the red edit button from screenshot
+    backgroundColor: '#E63946', // Refined brand red
   },
   timestampBtnText: {
     color: '#fff',
@@ -131,34 +131,55 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: '#333',
+    backgroundColor: '#2A2A2A',
     borderRadius: 4,
   },
   addTimeBtnText: {
-    color: '#aaa',
+    color: '#4DA8DA',
     fontSize: 12,
   },
   saveStatus: {
-    color: '#4CAF50',
+    color: '#888',
     fontSize: 12,
   },
   editor: {
     flex: 1,
     padding: 15,
-    color: '#fff',
+    color: '#E0E0E0',
     fontSize: 15,
     lineHeight: 24,
     fontFamily: 'monospace',
+    backgroundColor: '#0F0F0F',
   },
   previewContainer: {
     flex: 1,
     padding: 15,
+    backgroundColor: '#0F0F0F',
   }
 });
 
 const markdownStyles = {
-  body: { color: '#fff' },
-  heading1: { color: '#fff', marginTop: 10, marginBottom: 5 },
-  heading2: { color: '#fff', marginTop: 10, marginBottom: 5 },
-  strong: { color: '#4CAF50', fontWeight: 'bold' },
+  body: { color: '#E0E0E0', fontSize: 15, lineHeight: 24 },
+  heading1: { color: '#FFF', marginTop: 10, marginBottom: 5, fontSize: 24, fontWeight: 'bold' },
+  heading2: { color: '#FFF', marginTop: 10, marginBottom: 5, fontSize: 20, fontWeight: 'bold' },
+  strong: { color: '#E63946', fontWeight: 'bold' },
+  em: { fontStyle: 'italic', color: '#FFF' },
+  blockquote: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#E63946',
+    paddingLeft: 10,
+    color: '#AAA',
+    backgroundColor: '#1A1A1A',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  code_inline: {
+    backgroundColor: '#2A2A2A',
+    color: '#4DA8DA',
+  },
+  code_block: {
+    backgroundColor: '#1A1A1A',
+    color: '#FFF',
+    padding: 10,
+  }
 };

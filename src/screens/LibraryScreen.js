@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
@@ -33,7 +33,7 @@ export default function LibraryScreen({ navigation }) {
     try {
       let videoUris = [];
       
-      if (folder) {
+      if (folder && Platform.OS !== 'web') {
         try {
           if (folder.startsWith('content://')) {
             const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(folder);
@@ -96,6 +96,10 @@ export default function LibraryScreen({ navigation }) {
   };
 
   const selectFolder = async () => {
+    if (Platform.OS === 'web') {
+      alert("Folder selection is not supported on the web version. Please add individual videos using the + button.");
+      return;
+    }
     const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
     if (permissions.granted) {
       await AsyncStorage.setItem('video_folder', permissions.directoryUri);
@@ -136,17 +140,21 @@ export default function LibraryScreen({ navigation }) {
     return (
       <ScaleDecorator>
         <TouchableOpacity
-          style={[styles.videoItem, isActive && { backgroundColor: '#2a2a2a' }]}
+          style={[styles.videoItem, isActive && { backgroundColor: '#1A1A1A' }]}
           onPress={() => navigation.navigate('Player', { video: item })}
           disabled={isActive}
         >
-          <Image source={{ uri: item.thumb }} style={styles.thumbnail} />
+          <View style={styles.thumbnailContainer}>
+            <Image source={{ uri: item.thumb }} style={styles.thumbnail} />
+            <View style={styles.durationBadge}>
+              <Text style={styles.durationText}>{item.duration}</Text>
+            </View>
+          </View>
           <View style={styles.videoInfo}>
-            <Text style={styles.videoTitle} numberOfLines={1}>{item.filename}</Text>
-            <Text style={styles.videoDuration}>{item.duration}</Text>
+            <Text style={styles.videoTitle} numberOfLines={2}>{item.filename}</Text>
           </View>
           <TouchableOpacity onLongPress={drag} style={styles.dragHandle}>
-            <Ionicons name="menu" size={24} color="#555" />
+            <Ionicons name="menu" size={24} color="#888" />
           </TouchableOpacity>
         </TouchableOpacity>
       </ScaleDecorator>
@@ -155,22 +163,24 @@ export default function LibraryScreen({ navigation }) {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      {videos.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No videos found.</Text>
-          <TouchableOpacity style={styles.button} onPress={selectFolder}>
-            <Text style={styles.buttonText}>Set Video Folder</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <DraggableFlatList
-          data={videos}
-          onDragEnd={onDragEnd}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 15, paddingBottom: 80 }}
-        />
-      )}
+      <View style={styles.contentWrapper}>
+        {videos.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No videos found.</Text>
+            <TouchableOpacity style={styles.button} onPress={selectFolder}>
+              <Text style={styles.buttonText}>Set Video Folder</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <DraggableFlatList
+            data={videos}
+            onDragEnd={onDragEnd}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+          />
+        )}
+      </View>
       <TouchableOpacity style={styles.fab} onPress={addIndividualVideo}>
         <Ionicons name="add" size={30} color="#fff" />
       </TouchableOpacity>
@@ -182,6 +192,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+    alignItems: 'center',
+  },
+  contentWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 800,
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 80,
   },
   emptyContainer: {
     flex: 1,
@@ -190,12 +210,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   emptyText: {
-    color: '#555',
+    color: '#888',
     marginBottom: 20,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#E63946',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -206,40 +226,58 @@ const styles = StyleSheet.create({
   },
   videoItem: {
     flexDirection: 'row',
-    backgroundColor: '#111111',
-    marginBottom: 10,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+    backgroundColor: '#000000',
+  },
+  thumbnailContainer: {
+    width: 160,
+    height: 90,
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
+    overflow: 'hidden',
   },
   thumbnail: {
-    width: 80,
-    height: 45,
-    backgroundColor: '#333',
-    borderRadius: 4,
+    width: '100%',
+    height: '100%',
+  },
+  durationBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  durationText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   videoInfo: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: 14,
+    justifyContent: 'center',
+    paddingVertical: 4,
   },
   videoTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  videoDuration: {
-    color: '#555',
-    fontSize: 12,
-    marginTop: 4,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 21,
+    marginBottom: 6,
   },
   dragHandle: {
     padding: 10,
+    justifyContent: 'center',
   },
   fab: {
     position: 'absolute',
     bottom: 20,
     right: 20,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#E63946',
     width: 60,
     height: 60,
     borderRadius: 30,

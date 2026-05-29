@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -18,6 +18,10 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const changeFolder = async () => {
+    if (Platform.OS === 'web') {
+      alert("Folder selection is not available on the web preview.");
+      return;
+    }
     const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
     if (permissions.granted) {
       await AsyncStorage.setItem('video_folder', permissions.directoryUri);

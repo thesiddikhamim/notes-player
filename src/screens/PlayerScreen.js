@@ -48,15 +48,17 @@ export default function PlayerScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <VideoPlayer 
-        source={video.uri} 
-        onGoBack={() => navigation.goBack()} 
-        onTimeUpdate={setCurrentTime}
-        videoRef={videoRef}
-        onEndReached={() => {
-          if (!isWatched) toggleWatched();
-        }}
-      />
+      <View style={styles.playerWrapper}>
+        <VideoPlayer 
+          source={video.uri} 
+          onGoBack={() => navigation.goBack()} 
+          onTimeUpdate={setCurrentTime}
+          videoRef={videoRef}
+          onEndReached={() => {
+            if (!isWatched) toggleWatched();
+          }}
+        />
+      </View>
       <View style={styles.contentPanel}>
         <View style={styles.headerInfo}>
           <Text style={styles.title} numberOfLines={2}>{video.filename}</Text>
@@ -68,23 +70,23 @@ export default function PlayerScreen({ route, navigation }) {
             style={styles.actionItem} 
             onPress={() => setActiveTab('notes')}
           >
-            <Ionicons name="menu" size={24} color={activeTab === 'notes' ? '#fff' : '#888'} />
-            <Text style={[styles.actionText, activeTab === 'notes' && styles.activeActionText]}>Notes</Text>
+            <Ionicons name="create-outline" size={24} color={activeTab === 'notes' ? '#FFF' : '#E63946'} />
+            <Text style={[styles.actionText, activeTab === 'notes' ? styles.activeActionText : { color: '#E63946' }]}>Notes</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.actionItem} 
             onPress={toggleWatched}
           >
-            <Ionicons name="checkmark-circle" size={24} color={isWatched ? '#4CAF50' : '#888'} />
-            <Text style={[styles.actionText, isWatched && styles.activeActionText]}>Watched</Text>
+            <Ionicons name={isWatched ? "refresh" : "checkmark-circle-outline"} size={24} color={isWatched ? '#4DA8DA' : '#888'} />
+            <Text style={[styles.actionText, isWatched ? { color: '#4DA8DA' } : null]}>{isWatched ? 'Unwatch' : 'Watched'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.actionItem} 
             onPress={() => setActiveTab('transcript')}
           >
-            <Ionicons name="document-text" size={24} color={activeTab === 'transcript' ? '#fff' : '#888'} />
+            <Ionicons name="document-text-outline" size={24} color={activeTab === 'transcript' ? '#FFF' : '#888'} />
             <Text style={[styles.actionText, activeTab === 'transcript' && styles.activeActionText]}>Transcript</Text>
           </TouchableOpacity>
         </View>
@@ -106,47 +108,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  playerWrapper: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    maxWidth: 800,
+    alignSelf: 'center',
+    backgroundColor: '#000',
+  },
   contentPanel: {
     flex: 1, 
-    backgroundColor: '#0a0a0a', // Darker background to match screenshot
+    backgroundColor: '#0F0F0F',
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'center',
   },
   headerInfo: {
-    padding: 15,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: '#2A2A2A',
+    backgroundColor: '#0F0F0F',
   },
   title: {
-    color: '#fff',
-    fontSize: 20,
+    color: '#FFF',
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    color: '#888',
-    fontSize: 14,
+    color: '#AAAAAA',
+    fontSize: 13,
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 15,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: '#2A2A2A',
+    backgroundColor: '#1A1A1A',
   },
   actionItem: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   actionText: {
     color: '#888',
     fontSize: 12,
-    marginTop: 4,
-    fontWeight: '500',
+    marginTop: 6,
+    fontWeight: '600',
   },
   activeActionText: {
-    color: '#fff',
+    color: '#FFF',
   },
   panelContent: {
     flex: 1,
+    backgroundColor: '#000000',
   }
 });
 

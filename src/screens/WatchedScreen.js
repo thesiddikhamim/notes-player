@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,10 +26,21 @@ export default function WatchedScreen({ navigation }) {
 
   const loadVideos = async (folder) => {
     try {
+      if (Platform.OS === 'web') return; // Folder API doesn't work on Web
+      
       let videoFiles = [];
       try {
-        const files = await FileSystem.readDirectoryAsync(folder);
-        videoFiles = files.filter(f => f.match(/\.(mp4|mov|mkv|webm)$/i));
+        if (folder.startsWith('content://')) {
+            const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(folder);
+            videoFiles = files.filter(f => {
+              const dec = decodeURIComponent(f).toLowerCase();
+              return dec.endsWith('.mp4') || dec.endsWith('.mov') || dec.endsWith('.mkv') || dec.endsWith('.webm');
+            });
+        } else {
+            const files = await FileSystem.readDirectoryAsync(folder);
+            videoFiles = files.filter(f => f.match(/\.(mp4|mov|mkv|webm)$/i));
+            videoFiles = videoFiles.map(f => folder + (folder.endsWith('/') ? '' : '/') + f);
+        }
       } catch (e) {
         return;
       }
@@ -37,18 +48,27 @@ export default function WatchedScreen({ navigation }) {
       const watchedStr = await AsyncStorage.getItem('watched_videos');
       const watchedIds = watchedStr ? JSON.parse(watchedStr) : [];
       
-      const filteredFiles = videoFiles.filter(f => watchedIds.includes(f));
+      // Merge with individual added videos just in case
+      const savedAdded = await AsyncStorage.getItem('added_videos');
+      let addedUris = savedAdded ? JSON.parse(savedAdded) : [];
+      
+      const allUrisSet = new Set([...videoFiles, ...addedUris]);
+      const allUris = Array.from(allUrisSet);
 
-      let videoData = await Promise.all(filteredFiles.map(async (filename) => {
-        const uri = folder + (folder.endsWith('/') ? '' : '/') + filename;
+      const filteredFiles = allUris.filter(f => watchedIds.includes(f));
+
+      let videoData = await Promise.all(filteredFiles.map(async (uri) => {
         let thumb = null;
         try {
           const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(uri, { time: 1000 });
           thumb = thumbUri;
         } catch (e) { }
 
+        const decodedUri = decodeURIComponent(uri);
+        const filename = decodedUri.split('/').pop().split(':').pop();
+
         return {
-          id: filename,
+          id: uri,
           filename: filename.replace(/\.[^/.]+$/, ''),
           originalName: filename,
           uri,
@@ -93,17 +113,19 @@ export default function WatchedScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={videos}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 15 }}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No watched videos yet.</Text>
-          </View>
-        }
-      />
+      <View style={styles.contentWrapper}>
+        <FlatList
+          data={videos}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No watched videos yet.</Text>
+            </View>
+          }
+        />
+      </View>
     </View>
   );
 }
@@ -112,25 +134,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+    alignItems: 'center',
+  },
+  contentWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 800,
+  },
+  listContent: {
+    padding: 16,
   },
   emptyContainer: {
-    flex: 1,
+    padding: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   emptyText: {
-    color: '#555',
+    color: '#888',
     fontSize: 16,
   },
   videoItem: {
     flexDirection: 'row',
-    marginBottom: 20,
-    alignItems: 'center',
+    marginBottom: 16,
+    alignItems: 'flex-start',
+    backgroundColor: '#000000',
   },
   thumbnailContainer: {
-    width: 140,
-    height: 80,
-    backgroundColor: '#222',
+    width: 160,
+    height: 90,
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
     overflow: 'hidden',
   },
@@ -140,30 +172,34 @@ const styles = StyleSheet.create({
   },
   durationBadge: {
     position: 'absolute',
-    bottom: 5,
-    right: 5,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.85)',
     paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 3,
   },
   durationText: {
     color: '#fff',
-    fontSize: 11,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   videoInfo: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: 14,
+    justifyContent: 'center',
+    paddingVertical: 4,
   },
   videoTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 21,
+    marginBottom: 6,
   },
   videoSubtitle: {
-    color: '#aaa',
+    color: '#AAAAAA',
     fontSize: 13,
   },
 });
