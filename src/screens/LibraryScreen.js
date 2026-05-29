@@ -6,7 +6,6 @@ import * as MediaLibrary from 'expo-media-library';
 import * as DocumentPicker from 'expo-document-picker';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 
 export default function LibraryScreen({ navigation }) {
@@ -113,7 +112,7 @@ export default function LibraryScreen({ navigation }) {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'video/*',
         multiple: true,
-        copyToCacheDirectory: false,
+        copyToCacheDirectory: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -162,7 +161,7 @@ export default function LibraryScreen({ navigation }) {
   };
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.contentWrapper}>
         {videos.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -184,7 +183,7 @@ export default function LibraryScreen({ navigation }) {
       <TouchableOpacity style={styles.fab} onPress={addIndividualVideo}>
         <Ionicons name="add" size={30} color="#fff" />
       </TouchableOpacity>
-    </GestureHandlerRootView>
+    </View>
   );
 }
 

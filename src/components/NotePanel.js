@@ -9,13 +9,12 @@ export default function NotePanel({ videoId, currentTime }) {
   const [saveStatus, setSaveStatus] = useState('Saved ✓');
 
   useEffect(() => {
+    const loadNote = async () => {
+      const saved = await AsyncStorage.getItem(`notes_${videoId}`);
+      if (saved) setNote(saved);
+    };
     loadNote();
   }, [videoId]);
-
-  const loadNote = async () => {
-    const saved = await AsyncStorage.getItem(`notes_${videoId}`);
-    if (saved) setNote(saved);
-  };
 
   const handleNoteChange = (text) => {
     setNote(text);

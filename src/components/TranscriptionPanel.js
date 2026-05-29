@@ -13,45 +13,35 @@ export default function TranscriptionPanel({ currentTime, onSeek, videoId }) {
   const scrollTimeout = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    const parseAndSetCues = async (fileUri) => {
+      try {
+        if (Platform.OS === 'web') return; 
+        const fileData = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
+        const parsed = parseSRT(fileData);
+        if (isMounted) setCues(parsed || []);
+      } catch (e) {
+        console.log('Error parsing SRT:', e);
+      }
+    };
+
+    const loadSavedCaptions = async () => {
+      setIsLoading(true);
+      try {
+        const savedUri = await AsyncStorage.getItem(`transcript_${videoId}`);
+        if (savedUri) {
+          await parseAndSetCues(savedUri);
+        }
+      } catch (e) {
+        console.log('Error loading saved captions', e);
+      }
+      if (isMounted) setIsLoading(false);
+    };
+
     loadSavedCaptions();
+    return () => { isMounted = false; };
   }, [videoId]);
-
-  const loadSavedCaptions = async () => {
-    setIsLoading(true);
-    try {
-      const savedUri = await AsyncStorage.getItem(`transcript_${videoId}`);
-      if (savedUri) {
-        await parseAndSetCues(savedUri);
-      }
-    } catch (e) {
-      console.log('Error loading saved captions', e);
-    }
-    setIsLoading(false);
-  };
-
-  const parseAndSetCues = async (fileUri) => {
-    try {
-      if (Platform.OS === 'web') return; // reading local absolute URI usually breaks on web. A real web app would read from a blob URL or input stream.
-      const fileData = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
-      const parsed = parseSRT(fileData);
-      setCues(parsed);
-    } catch (e) {
-      console.log('Error parsing SRT:', e);
-    }
-  };
-
-  useEffect(() => {
-    if (cues.length > 0 && autoScroll && listRef.current) {
-      const activeIndex = cues.findIndex(c => currentTime >= c.start && currentTime <= c.end);
-      if (activeIndex !== -1) {
-        listRef.current.scrollToIndex({
-          index: activeIndex,
-          animated: true,
-          viewPosition: 0.2 // ~2 rows from top
-        });
-      }
-    }
-  }, [currentTime, cues, autoScroll]);
 
   const handleLoadCaptions = async () => {
     try {
@@ -63,7 +53,7 @@ export default function TranscriptionPanel({ currentTime, onSeek, videoId }) {
       if (res.canceled) return;
       const fileUri = res.assets[0].uri;
       
-      await parseAndSetCues(fileUri);
+      if (Platform.OS !== 'web') { const fileData = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 }); const parsed = parseSRT(fileData); setCues(parsed || []); }
       await AsyncStorage.setItem(`transcript_${videoId}`, fileUri);
 
     } catch (e) {
@@ -138,6 +128,14 @@ export default function TranscriptionPanel({ currentTime, onSeek, videoId }) {
         onScrollEndDrag={onScrollEndDrag}
         onScrollMomentumEnd={onScrollEndDrag}
         showsVerticalScrollIndicator={false}
+        onScrollToIndexFailed={(info) => {
+          const wait = new Promise(resolve => setTimeout(resolve, 500));
+          wait.then(() => {
+            if (listRef.current) {
+              listRef.current.scrollToIndex({ index: info.index, animated: true });
+            }
+          });
+        }}
       />
     </View>
   );

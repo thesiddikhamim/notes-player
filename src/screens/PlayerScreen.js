@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import VideoPlayer from '../components/VideoPlayer';
@@ -14,17 +14,8 @@ export default function PlayerScreen({ route, navigation }) {
   const [isWatched, setIsWatched] = useState(false);
   const videoRef = useRef(null);
 
-  useEffect(() => {
-    checkIfWatched();
-  }, []);
+  useEffect(() => { const checkIfWatched = async () => { const watchedStr = await AsyncStorage.getItem('watched_videos'); if (watchedStr) { const watchedArr = JSON.parse(watchedStr); setIsWatched(watchedArr.includes(video.id)); } }; checkIfWatched(); }, [video.id]);
 
-  const checkIfWatched = async () => {
-    const watchedStr = await AsyncStorage.getItem('watched_videos');
-    if (watchedStr) {
-      const watchedArr = JSON.parse(watchedStr);
-      setIsWatched(watchedArr.includes(video.id));
-    }
-  };
 
   const toggleWatched = async () => {
     const watchedStr = await AsyncStorage.getItem('watched_videos');
