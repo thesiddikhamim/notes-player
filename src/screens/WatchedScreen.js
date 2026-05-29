@@ -1,13 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 
+const THUMB_CONCURRENCY = 3;
+
+async function mapWithConcurrency(items, mapper, concurrency) {
+  let next = 0;
+  const workerCount = Math.min(concurrency, items.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      try {
+        await mapper(items[i], i);
+      } catch (e) {
+        // swallow per-item errors
+      }
+    }
+  });
+  await Promise.all(workers);
+}
+
 export default function WatchedScreen({ navigation }) {
   const [folderUri, setFolderUri] = useState(null);
+  const [hasContent, setHasContent] = useState(false);
   const [videos, setVideos] = useState([]);
+  const loadIdRef = useRef(0);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -18,66 +39,77 @@ export default function WatchedScreen({ navigation }) {
 
   const loadFolderAndVideos = async () => {
     const savedFolder = await AsyncStorage.getItem('video_folder');
-    if (savedFolder) {
-      setFolderUri(savedFolder);
-      loadVideos(savedFolder);
-    }
+    const savedAdded = await AsyncStorage.getItem('added_videos');
+    setFolderUri(savedFolder);
+    setHasContent(Boolean(savedFolder) || (savedAdded && JSON.parse(savedAdded).length > 0));
+    loadVideos(savedFolder);
   };
 
   const loadVideos = async (folder) => {
+    const myLoadId = ++loadIdRef.current;
     try {
-      if (Platform.OS === 'web') return; // Folder API doesn't work on Web
-      
+      if (Platform.OS === 'web') return;
+
       let videoFiles = [];
-      try {
-        if (folder.startsWith('content://')) {
+      if (folder) {
+        try {
+          if (folder.startsWith('content://')) {
             const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(folder);
             videoFiles = files.filter(f => {
               const dec = decodeURIComponent(f).toLowerCase();
               return dec.endsWith('.mp4') || dec.endsWith('.mov') || dec.endsWith('.mkv') || dec.endsWith('.webm');
             });
-        } else {
+          } else {
             const files = await FileSystem.readDirectoryAsync(folder);
             videoFiles = files.filter(f => f.match(/\.(mp4|mov|mkv|webm)$/i));
             videoFiles = videoFiles.map(f => folder + (folder.endsWith('/') ? '' : '/') + f);
+          }
+        } catch (e) {
+          // ignore folder read errors; we'll still show added videos
         }
-      } catch (e) {
-        return;
       }
-      
+
       const watchedStr = await AsyncStorage.getItem('watched_videos');
       const watchedIds = watchedStr ? JSON.parse(watchedStr) : [];
-      
-      // Merge with individual added videos just in case
-      const savedAdded = await AsyncStorage.getItem('added_videos');
-      let addedUris = savedAdded ? JSON.parse(savedAdded) : [];
-      
-      const allUrisSet = new Set([...videoFiles, ...addedUris]);
-      const allUris = Array.from(allUrisSet);
 
+      const savedAdded = await AsyncStorage.getItem('added_videos');
+      const addedUris = savedAdded ? JSON.parse(savedAdded) : [];
+
+      const allUris = Array.from(new Set([...videoFiles, ...addedUris]));
       const filteredFiles = allUris.filter(f => watchedIds.includes(f));
 
-      let videoData = await Promise.all(filteredFiles.map(async (uri) => {
-        let thumb = null;
-        try {
-          const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(uri, { time: 1000 });
-          thumb = thumbUri;
-        } catch (e) { }
-
+      const videoData = filteredFiles.map((uri) => {
         const decodedUri = decodeURIComponent(uri);
         const filename = decodedUri.split('/').pop().split(':').pop();
-
         return {
           id: uri,
           filename: filename.replace(/\.[^/.]+$/, ''),
           originalName: filename,
           uri,
-          thumb,
-          duration: "--:--"
+          thumb: null,
+          duration: '--:--',
         };
-      }));
+      });
 
+      if (myLoadId !== loadIdRef.current) return;
       setVideos(videoData);
+
+      await mapWithConcurrency(
+        videoData,
+        async (item) => {
+          if (myLoadId !== loadIdRef.current) return;
+          try {
+            const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(item.uri, { time: 1000 });
+            if (myLoadId !== loadIdRef.current) return;
+            setVideos((prev) =>
+              prev.map((v) => (v.id === item.id ? { ...v, thumb: thumbUri } : v))
+            );
+          } catch (e) {
+            // leave thumb null
+          }
+        },
+        THUMB_CONCURRENCY
+      );
     } catch (e) {
       console.log('Error loading videos', e);
     }
@@ -90,7 +122,13 @@ export default function WatchedScreen({ navigation }) {
         onPress={() => navigation.navigate('Player', { video: item })}
       >
         <View style={styles.thumbnailContainer}>
-          <Image source={{ uri: item.thumb }} style={styles.thumbnail} />
+          {item.thumb ? (
+            <Image source={{ uri: item.thumb }} style={styles.thumbnail} />
+          ) : (
+            <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+              <Ionicons name="film-outline" size={28} color="#444" />
+            </View>
+          )}
           <View style={styles.durationBadge}>
             <Text style={styles.durationText}>{item.duration}</Text>
           </View>
@@ -103,10 +141,10 @@ export default function WatchedScreen({ navigation }) {
     );
   };
 
-  if (!folderUri) {
+  if (!hasContent) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No video folder selected.</Text>
+        <Text style={styles.emptyText}>No videos selected yet.</Text>
       </View>
     );
   }
@@ -169,6 +207,11 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: '100%',
+  },
+  thumbnailPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
   },
   durationBadge: {
     position: 'absolute',

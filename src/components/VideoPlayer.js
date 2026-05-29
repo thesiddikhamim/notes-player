@@ -4,6 +4,7 @@ import { Video, Audio, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
+import { setStatusBarHidden } from 'expo-status-bar';
 import Slider from '@react-native-community/slider';
 
 export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, onEndReached }) {
@@ -55,9 +56,11 @@ export default function VideoPlayer({ source, onGoBack, onTimeUpdate, videoRef, 
   const toggleFullscreen = async () => {
     if (isFullscreen) {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      setStatusBarHidden(false, 'fade');
       setIsFullscreen(false);
     } else {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      setStatusBarHidden(true, 'fade');
       setIsFullscreen(true);
     }
   };
